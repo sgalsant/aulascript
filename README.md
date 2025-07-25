@@ -4,25 +4,32 @@ Este repositorio contiene un conjunto de scripts diseñados para automatizar la 
 
 ## Características Principales
 
-*   **Gestión de Usuarios:** Creación masiva de cuentas de usuario locales con contraseñas predefinidas y carpetas personales seguras en la unidad `D:`.
-*   **Instalador de Software:** Sistema de instalación de aplicaciones modular y desatendido, controlado por un fichero de configuración `aplicaciones.json`.
-*   **Configuración de Red:** Asignación de una dirección IP estática, máscara de subred, puerta de enlace y servidores DNS. La IP se calcula dinámicamente a partir del nombre del equipo.
-*   **Flexibilidad:** Fácil de adaptar y extender. Puedes modificar la lista de usuarios, el catálogo de software y los parámetros de red directamente en los ficheros de configuración.
+*   **Menú Interactivo Centralizado:** Un único script `instalar.bat` que presenta un menú claro para ejecutar todas las tareas, evitando la necesidad de lanzar múltiples ficheros.
+*   **Elevación Automática de Privilegios:** El script solicita automáticamente los permisos de administrador necesarios para funcionar.
+*   **Instalador de Software Modular:** Sistema de instalación desatendido controlado por un fichero `aplicaciones.json`, que permite definir qué instalar y con qué parámetros.
+*   **Gestión de Usuarios:** Creación masiva de cuentas de usuario locales con carpetas personales seguras.
+*   **Configuración de Red Dinámica:** Asignación de una dirección IP estática, puerta de enlace y DNS, calculando la IP a partir del nombre del equipo.
+*   **Manejo de Reinicios:** Capacidad para programar scripts que se ejecutan automáticamente después de un reinicio, esencial para instalaciones complejas como WSL.
 *   **Logging:** Genera un registro detallado (`installation.log`) de todo el proceso de instalación de software.
 
 ## Estructura del Proyecto
 
 ```
-aulascript-1/
-├── repo/                     # Carpeta para los instaladores (.exe, .msi)
-├── 1-crear-cuentas-instalar-aplicaciones.bat  # Script principal de configuración
-├── 2-cambiar-ip.bat          # Script para configurar la red estática
-├── 3-wsl-post-restart.bat    # Script para tareas post-reinicio (ej. WSL)
-├── aplicaciones.json         # Fichero de configuración de software
-├── cuentas-usuario.ps1       # Lógica para crear usuarios y carpetas
-├── instalar-aplicaciones.ps1 # Lógica para instalar el software
-└── README.md                 # Este fichero
-```
+aulascript-1/ 
+├── repo/ # Carpeta para alojar los instaladores (.exe, .msi). 
+├── script/ # Contiene toda la lógica de PowerShell. 
+│ ├── cambiar-ip.ps1
+│ ├── configurar-psremoting.ps1
+│ ├── cuentas-usuario.ps1
+│ ├── instalar-aplicaciones.ps1
+│ └── utils.ps1
+├── postscript/ # Scripts a ejecutar tras una instalación específica. 
+│ ├── docker.ps1
+│ ├── wsl.ps1 
+│ └── wsl-post-restart.ps1
+├── instalar.bat # Script principal con menú interactivo. 
+├── aplicaciones.json # Fichero de configuración para la instalación de software. 
+└── README.md # Este fichero.```
 
 ## Instrucciones de Uso
 
@@ -61,31 +68,28 @@ Edita el fichero `aplicaciones.json` para definir qué software se instalará.
 ]
 ```
 
-### 3. Configurar los Usuarios (Opcional)
-
-Si necesitas cambiar la lista de usuarios a crear, edita la variable `$usuarios` al principio del fichero `cuentas-usuario.ps1`.
+### 3. Configurar Scripts (Opcional)
+Usuarios: Para cambiar la lista de usuarios a crear, edita el fichero script/cuentas-usuario.ps1.
+Red: Para ajustar los valores de red por defecto (IP base, puerta de enlace, DNS), edita el fichero script/cambiar-ip.ps1.
 
 ### 4. Ejecutar los Scripts
 
-**Importante:** Todos los scripts `.bat` deben ejecutarse con privilegios de administrador.
-
-1.  **Configuración Inicial:** Haz clic derecho sobre `1-crear-cuentas-instalar-aplicaciones.bat` y selecciona **"Ejecutar como administrador"**. Este script creará los usuarios e instalará el software definido en `aplicaciones.json`.
-    *   **Nota sobre WSL:** La instalación de Windows Subsystem for Linux (WSL) se inicia en este paso pero requiere un reinicio para completarse.
-
-2.  **Configuración de Red:** Haz clic derecho sobre `2-cambiar-ip.bat` y selecciona **"Ejecutar como administrador"** para configurar la red estática del equipo.
-
-3.  **Reiniciar el Equipo:** Reinicia el ordenador para que se apliquen todos los cambios, especialmente la activación de la característica WSL.
-
-4.  **Finalizar Instalación de WSL (Si aplica):** Si has instalado WSL, tras el reinicio, haz clic derecho sobre `3-wsl-post-restart.bat` y selecciona **"Ejecutar como administrador"**. Este script finalizará la configuración de WSL, instalando la distribución de Ubuntu y preparando el entorno para herramientas como Docker.
+Haz clic derecho sobre instalar.bat y selecciona "Ejecutar como administrador". El script detectará si no tiene privilegios y los solicitará.
+Aparecerá un menú en la consola con las siguientes opciones:
+1 - Configurar Sistema (Zona Horaria, PSRemoting)
+2 - Configurar direccion de red estatica
+3 - Crear cuentas de usuario
+4 - Instalar aplicaciones
+5 - Ejecutar todas las tareas (ejecuta las 4 anteriores en orden)
+6 - Salir
+Selecciona la opción deseada y presiona ENTER.
+Una vez que la tarea finalice, puedes elegir otra opción del menú o salir.
 
 ## Funcionamiento de la Configuración de Red
 
 El script `2-cambiar-ip.bat` lanza un script de PowerShell (`2-cambiar-ip.ps1`) que está diseñado para aulas donde los equipos siguen un patrón de nomenclatura, como `AULA1-PC01`, `AULA1-PC02`, etc.
 
-*   **Cálculo Automático:** El script calcula automáticamente la dirección IP basándose en los dos últimos dígitos numéricos del nombre del equipo.
+*   **Cálculo Automático:** El script calcula automáticamente la dirección IP basándose en los dos últimos dígitos numéricos del nombre del equipo, más el valor Base indicado
     *   *Ejemplo:* Si el `hostname` es `AULA1-PC07` y la configuración base es `192.168.150.50`, la IP resultante será `192.168.150.57` (50 + 7).
 *   **Confirmación Interactiva:** Antes de aplicar cualquier cambio, el script muestra la configuración que va a aplicar y pide una confirmación rápida (S/N).
 *   **Flexibilidad:** Los valores de red por defecto (IP base, puerta de enlace, DNS) se pueden modificar fácilmente al principio del fichero `2-cambiar-ip.ps1`.
-*   **Uso Avanzado (Automatización):** El script de PowerShell puede ejecutarse con parámetros para anular la configuración por defecto, lo que permite su uso en escenarios de despliegue totalmente automatizados.
-
-Puedes modificar los valores por defecto directamente en el fichero `2-cambiar-ip.ps1` para adaptarlo a tu red.
