@@ -1,64 +1,77 @@
 [
   {
     "name": "openjdk",
-    "parameters": "",
-    "install": true
+    "parameters": []
   },
   {
     "name": "libreoffice",
-    "parameters": "",
-    "install": true
+    "parameters": []
   },
   {
     "name": "7z",
-    "parameters": "",
-    "install": true
+    "parameters": [
+      "/S"
+    ]
   },
   {
     "name": "firefox",
-    "parameters": "",
-    "install": true
+    "parameters": [
+      "-ms"
+    ]
   },
   {
     "name": "vmware",
-    "parameters": "/s /v\"/qn ADDLOCAL=ALL EULAS_AGREED=1\"",
-    "install": true
+    "parameters": [
+      "/s",
+      "/v\"/qn ADDLOCAL=ALL EULAS_AGREED=1\""
+    ]
   },
   {
     "name": "googlechrome",
-    "parameters": "",
-    "install": true
+    "parameters": []
   },
   {
     "name": "wsl",
-    "parameters": "",
-    "install": true,
-    "postscript": "postscript/wsl.ps1"
+    "parameters": [],
+    "postscript": "postscript/wsl.ps1",
+    "postRebootScript": "postscript/wsl-post-restart.ps1"
   },
   {
     "name": "docker",
-    "parameters": "install,--quiet,--accept-license,--always-run-service",
-    "install": true,
+    "parameters": [
+      "install",
+      "--quiet",
+      "--accept-license",
+      "--always-run-service"
+    ],
     "postscript": "postscript/docker.ps1"
   },
   {
     "name": "cisco",
-    "parameters": "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
-    "install": true
+    "parameters": [
+      "/VERYSILENT",
+      "/SUPPRESSMSGBOXES",
+      "/NORESTART"
+    ]
   },
   {
     "name": "veyon",
-    "parameters": "/S /NoMaster",
-    "install": true
+    "parameters": [
+      "/S",
+      "/NoMaster"
+    ]
   },
   {
     "name": "virtualbox",
-    "parameters": "",
-    "install": true
+    "parameters": [
+      "--silent",
+      "--msiparams",
+      "ADDLOCAL=ALL ALLUSERS=1 INSTALL_DESKTOP_SHORTCUT=1"
+    ]
   },
   {
     "name": "vscode",
-    "parameters": "",
+    "parameters": [],
     "install": false
   }
 ]

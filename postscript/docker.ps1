@@ -1,20 +1,24 @@
-# Lista de usuarios a añadir al grupo "docker-users"
-$usuarios = @("1dam", "2dam", "1daw", "2daw", "1smr", "2smr", "ciber", "35007842")
+# Este script añade todos los usuarios locales activos (no del sistema) al grupo "docker-users".
+
 $grupo = "docker-users"
 
-foreach ($usuario in $usuarios) {
-    # Verificar si el usuario existe
-    if (Get-LocalUser -Name $usuario -ErrorAction SilentlyContinue) {
-        # Verificar si el usuario ya pertenece al grupo
-        $miembro = Get-LocalGroupMember -Group $grupo -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $usuario }
+# Lista de cuentas del sistema que se deben ignorar
+$systemAccounts = @('Administrator', 'Guest', 'DefaultAccount', 'WDAGUtilityAccount')
 
-        if (-not $miembro) {
-            Write-Host "Añadiendo $usuario al grupo $grupo..."
-            net localgroup $grupo $usuario /add | Out-Null
-        } else {
-            Write-Host "$usuario ya es miembro del grupo $grupo. No se añade."
-        }
+# Obtener todos los usuarios locales que están habilitados y no son cuentas del sistema
+$usuarios = Get-LocalUser | Where-Object { $_.Enabled -and $_.Name -notin $systemAccounts }
+
+Write-Host "Añadiendo usuarios al grupo '$grupo'..."
+
+foreach ($usuario in $usuarios) {
+    $userName = $usuario.Name
+    # Verificar si el usuario ya es miembro del grupo de una forma más eficiente
+    $miembro = Get-LocalGroupMember -Group $grupo -Member $userName -ErrorAction SilentlyContinue
+
+    if (-not $miembro) {
+        Write-Host "  - Añadiendo a '$userName'..."
+        Add-LocalGroupMember -Group $grupo -Member $userName
     } else {
-        Write-Host "El usuario $usuario no existe. No se añade."
+        Write-Host "  - '$userName' ya es miembro del grupo." -ForegroundColor Gray
     }
 }

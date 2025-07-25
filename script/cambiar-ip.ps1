@@ -26,6 +26,9 @@ param (
     [string[]]$DNSServers
 )
 
+# Importar funciones de utilidad
+. "$PSScriptRoot\utils.ps1"
+
 # --- CONFIGURACION POR DEFECTO (si no se pasan por parámetro) ---
 $BaseIPNetwork = '192.168.150.'
 $BaseOctet = 50
@@ -102,12 +105,6 @@ if ($choice.ToLower() -notin @('s', '')) {
 
 # --- APLICACION DE LA CONFIGURACION ---
 try {
-    Write-Host "`nConfigurando zona horaria y PS Remoting..." -ForegroundColor Cyan
-    Set-TimeZone -Id 'GMT Standard Time' 
-    Enable-PSRemoting -SkipNetworkProfileCheck -Force 
-
-    Write-host "adaptador"
-
     $adapter = Get-NetAdapter -Name $InterfaceAlias -ErrorAction Stop
     Write-Host "Configurando IP estática para '$($adapter.Name)'..." -ForegroundColor Cyan
     
@@ -124,5 +121,3 @@ try {
     Write-Error "Ocurrió un error al aplicar la configuración: $_"
 }
 
-Write-Host "`nProceso finalizado. Presione cualquier tecla para cerrar la ventana."
-[void][System.Console]::ReadKey($true)
