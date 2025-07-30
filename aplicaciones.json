@@ -67,7 +67,8 @@
       "--silent",
       "--msiparams",
       "ADDLOCAL=ALL ALLUSERS=1 INSTALL_DESKTOP_SHORTCUT=1"
-    ]
+    ],
+    "postscript": "postscript/virtualbox-ext.ps1"
   },
   {
     "name": "vscode",

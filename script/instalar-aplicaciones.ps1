@@ -5,8 +5,6 @@ param (
     [string]$logPath = "$PSScriptRoot\..\installation.log"
 )
 
-# Importar funciones de utilidad
-. "$PSScriptRoot\utils.ps1"
 
 # --- Define project root for resolving relative paths ---
 $projectRoot = (Split-Path -Path $PSScriptRoot -Parent)
@@ -152,7 +150,4 @@ if ($rebootRequired) {
     }
 } else {
     Write-Host "`nTodas las instalaciones han finalizado." -ForegroundColor Cyan
-    if ($Host.Name -notlike "*ServerRemoteHost*") {
-        Wait-KeyWithTimeout -Message "Presione cualquier tecla para cerrar o espere {0} segundos."
-    }
 }

@@ -1,5 +1,8 @@
+@chcp 65001 >nul
 @echo off
 setlocal
+
+
 
 :admin_check
 :: Comprueba si el script tiene privilegios de administrador. Si no, se reinicia para pedirlos.
@@ -12,9 +15,9 @@ if '%errorlevel%' NEQ '0' (
 
 :menu
 cls
-echo =============================================
-echo  MENU DE CONFIGURACION E INSTALACION
-echo =============================================
+echo ========================================================
+echo  MENÚ DE CONFIGURACIÓN E INSTALACIÓN DE EQUIPOS DE AULA
+echo ========================================================
 echo.
 echo  (Ejecutando como Administrador)
 echo.
@@ -22,9 +25,11 @@ echo  1 - Configurar Sistema (Zona Horaria, PSRemoting)
 echo  2 - Configurar direccion de red estatica
 echo  3 - Crear cuentas de usuario
 echo  4 - Instalar aplicaciones
-echo  5 - Ejecutar todas las tareas
-echo  6 - Salir
-echo.
+echo  5 - Ejecutar todas las tareas (1-4)
+echo  0 - Salir
+echo =============================================
+echo  6 - Crear menú de arranque con ocopiones de hyperv (beta)
+echo  7 - Instalar extensión de virtualbox
 echo =============================================
 
 set /p "opcion=Seleccione una opcion y presione ENTER: "
@@ -34,7 +39,9 @@ if "%opcion%"=="2" goto configurar_ip
 if "%opcion%"=="3" goto crear_usuarios
 if "%opcion%"=="4" goto instalar_apps
 if "%opcion%"=="5" goto todo
-if "%opcion%"=="6" goto salir
+if "%opcion%"=="6" goto crear_menu_arranque
+if "%opcion%"=="7" goto instalar_virtualbox_ext
+if "%opcion%"=="0" goto salir
 
 echo.
 echo Opcion no valida. Presione una tecla para continuar...
@@ -73,10 +80,27 @@ echo =============================================
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0\script\instalar-aplicaciones.ps1"
 goto :post_task
 
+:crear_menu_arranque
+cls
+echo =============================================
+echo  6. CREANDO MENU DE ARRANQUE...
+echo =============================================
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0\script\crear-menu-arranque-hyperv.ps1"
+goto :post_task
+
+:instalar_virtualbox_ext
+cls
+echo =============================================
+echo  7. Instalar extension de virtualbox...
+echo =============================================
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0\postscript\virtualbox-ext.ps1"
+goto :post_task
+
+
 :todo
 cls
 echo =============================================
-echo  EJECUTANDO TODAS LAS TAREAS...
+echo  EJECUTANDO TODAS LAS TAREAS (1-4)...
 echo =============================================
 echo.
 echo --- 1. Configurando Sistema ---
