@@ -101,9 +101,10 @@ Durante la instalación, crea una cuenta de usuario local que sea Administrador.
 *Importante*: Anota bien el nombre de ese usuario y su contraseña, ya que el script Orquestador te los pedirá para poder entrar por la puerta trasera.
 
 **2. Abrir las puertas de PowerShell (Dentro de la VM)**
-Inicia sesión en la máquina virtual, abre PowerShell como Administrador y ejecuta este comando para que acepte órdenes desde tu máquina física a través de PowerShell Direct o red:
+Inicia sesión en la máquina virtual, abre PowerShell como Administrador y ejecuta estos comandos para que acepte órdenes desde tu máquina física a través de PowerShell Direct o red, y permita la ejecución de scripts locales:
 ```powershell
 Enable-PSRemoting -Force
+Set-ExecutionPolicy Bypass -Scope LocalMachine -Force
 ```
 
 **3. Habilitar los "Servicios de invitado" (En Hyper-V)**
