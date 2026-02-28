@@ -55,19 +55,19 @@ while ($true) {
 
     if ($choice.ToLower() -eq 'd') {
         $useDhcp = $true
-        Write-Host "`nSe configurará la red para usar DHCP." -ForegroundColor Green
+        Write-AulaLog -Message "Se configurará la red para usar DHCP." -Level INFO
         Start-Sleep -Seconds 1
         break
     }
 
     if ($classroomConfigs.ContainsKey($choice)) {
         $selectedConfig = $classroomConfigs[$choice]
-        Write-Host "`nConfiguración para el Aula $choice seleccionada." -ForegroundColor Green
+        Write-AulaLog -Message "Configuración para el Aula $choice seleccionada." -Level INFO
         Start-Sleep -Seconds 1
         break
     }
     else {
-        Write-Warning "Selección no válida. Por favor, inténtelo de nuevo."
+        Write-AulaLog -Message "Selección no válida. Por favor, inténtelo de nuevo." -Level WARNING
         Start-Sleep -Seconds 2
         Clear-Host
     }
@@ -76,16 +76,16 @@ while ($true) {
 
 # --- DETECCION AUTOMATICA DE INTERFAZ (si no se especifica) ---
 if (-not $PSBoundParameters.ContainsKey('InterfaceAlias')) {
-    Write-Host "Buscando primer adaptador de red físico, cableado y conectado (no Wi-Fi)..."
+    Write-AulaLog -Message "Buscando primer adaptador de red físico, cableado y conectado (no Wi-Fi)..." -Level INFO
     # Busca adaptadores físicos, que no sean Wi-Fi (ifType 71) y que estén activos ('Up')
     $activeAdapter = Get-NetAdapter -Physical | Where-Object { $_.Status -eq 'Up' -and $_.ifType -ne 71 } | Select-Object -First 1
 
     if ($activeAdapter) {
         $InterfaceAlias = $activeAdapter.Name
-        Write-Host "Interfaz detectada automáticamente: '$InterfaceAlias'" -ForegroundColor Green
+        Write-AulaLog -Message "Interfaz detectada automáticamente: '$InterfaceAlias'" -Level SUCCESS
     } else {
-        Write-Warning "No se pudo detectar un adaptador de red cableado y activo. Se usará el valor por defecto: '$InterfaceAlias'."
-        Write-Warning "Si el script falla, compruebe las conexiones de red o ejecútelo de nuevo especificando el nombre correcto, ej: -InterfaceAlias 'Ethernet 2'"
+        Write-AulaLog -Message "No se pudo detectar un adaptador de red cableado y activo. Se usará el valor por defecto: '$InterfaceAlias'." -Level WARNING
+        Write-AulaLog -Message "Si el script falla, compruebe las conexiones de red o ejecútelo de nuevo especificando el nombre correcto, ej: -InterfaceAlias 'Ethernet 2'" -Level WARNING
     }
 }
 # --- FIN DE DETECCION ---
@@ -108,7 +108,7 @@ if ($useDhcp) {
             if ([System.Environment]::MachineName -match '(\d+)$') {
                 $hostNumber = [int]$Matches[1]
             } else {
-                Write-Warning "No se encontraron dígitos al final del nombre del equipo. Usando 0."
+                Write-AulaLog -Message "No se encontraron dígitos al final del nombre del equipo. Usando 0." -Level WARNING
                 $hostNumber = 0
             }
             
@@ -117,7 +117,7 @@ if ($useDhcp) {
 
             $IPAddress = "$($selectedConfig.BaseIPNetwork)$finalOctet"
         } catch {
-            Write-Error "No se pudo calcular la IP a partir del nombre del equipo. Error: $_"
+            Write-AulaLog -Message "No se pudo calcular la IP a partir del nombre del equipo. Error: $_" -Level ERROR
             exit 1
         }
     }
@@ -137,7 +137,7 @@ Write-Host "================================================="
 # El script continuará si se introduce 's' o se presiona Enter. Cualquier otra tecla cancelará.
 $confirm = Read-Host "`n¿Aplicar esta configuración? [S/n]"
 if ($confirm.ToLower() -notin @('s', '')) {
-    Write-Warning "Operación cancelada por el usuario."
+    Write-AulaLog -Message "Operación cancelada por el usuario." -Level WARNING
     Start-Sleep -Seconds 3
     exit
 }
@@ -145,24 +145,28 @@ if ($confirm.ToLower() -notin @('s', '')) {
 # --- APLICACION DE LA CONFIGURACION ---
 try {
     $adapter = Get-NetAdapter -Name $InterfaceAlias -ErrorAction Stop
-    Write-Host "Configurando IP estática para '$($adapter.Name)'..." -ForegroundColor Cyan
+    Write-AulaLog -Message "Configurando IP estática para '$($adapter.Name)'..." -Level INFO
 
     if ($useDhcp) {
-        Write-Host "Habilitando DHCP en '$($adapter.Name)'..." -ForegroundColor Cyan
-        Set-NetIPInterface -InterfaceIndex $adapter.InterfaceIndex -Dhcp Enabled
-        Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ResetServerAddresses
-        Write-Host "`nConfiguración DHCP completada." -ForegroundColor Green
+        Write-AulaLog -Message "Habilitando DHCP en '$($adapter.Name)'..." -Level INFO
+        Set-NetIPInterface -InterfaceIndex $adapter.InterfaceIndex -Dhcp Enabled -ErrorAction Stop
+        Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ResetServerAddresses -ErrorAction Stop
+        Write-AulaLog -Message "Configuración DHCP completada." -Level SUCCESS
     } else {
         # Eliminar IPs y Gateways previos para evitar conflictos
         # Primero se elimina la ruta por defecto (Gateway) para evitar problemas
-        Remove-NetRoute -InterfaceIndex $adapter.InterfaceIndex -DestinationPrefix 0.0.0.0/0 -Confirm:$false -ErrorAction SilentlyContinue
-        Get-NetIPAddress -InterfaceIndex $adapter.InterfaceIndex -AddressFamily IPv4 | Remove-NetIPAddress -Confirm:$false -ErrorAction SilentlyContinue
+        try {
+            Remove-NetRoute -InterfaceIndex $adapter.InterfaceIndex -DestinationPrefix 0.0.0.0/0 -Confirm:$false -ErrorAction Stop
+            Get-NetIPAddress -InterfaceIndex $adapter.InterfaceIndex -AddressFamily IPv4 -ErrorAction Stop | Remove-NetIPAddress -Confirm:$false -ErrorAction Stop
+        } catch {
+            Write-AulaLog -Message "Advertencia al purgar rutas previas (puede ignorarse si estaba limpia): $($_.Exception.Message)" -Level WARNING
+        }
         
         # Asignar la nueva configuración de IP y Puerta de enlace
-        New-NetIPAddress -InterfaceIndex $adapter.InterfaceIndex -IPAddress $IPAddress -PrefixLength $PrefixLength -DefaultGateway $Gateway -ErrorAction Stop
+        New-NetIPAddress -InterfaceIndex $adapter.InterfaceIndex -IPAddress $IPAddress -PrefixLength $PrefixLength -DefaultGateway $Gateway -ErrorAction Stop | Out-Null
         Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ServerAddresses $DNSServers -ErrorAction Stop
-        Write-Host "`nConfiguración de red estática completada." -ForegroundColor Green
+        Write-AulaLog -Message "Configuración de red estática completada exitosamente." -Level SUCCESS
     }
 } catch {
-    Write-Error "Ocurrió un error al aplicar la configuración: $_"
+    Write-AulaLog -Message "Ocurrió un error CRÍTICO al aplicar la configuración de red: $($_.Exception.Message)" -Level ERROR
 }

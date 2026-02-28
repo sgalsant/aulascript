@@ -9,6 +9,9 @@ param (
 # --- Define project root for resolving relative paths ---
 $projectRoot = (Split-Path -Path $PSScriptRoot -Parent)
 
+# Importar funciones de utilidad para usar Write-AulaLog
+. "$PSScriptRoot\utils.ps1"
+
 # Flag to track if a reboot is needed
 $rebootRequired = $false
 
@@ -16,12 +19,6 @@ $rebootRequired = $false
 $config = Get-Content $configFile | ConvertFrom-Json
 $total = $config.Count
 $index = 0
-
-function Write-Log {
-    param ([string]$message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$timestamp - $message" | Out-File -FilePath $logPath -Append -Encoding utf8
-}
 
 foreach ($app in $config) {
     $index++
@@ -40,9 +37,7 @@ foreach ($app in $config) {
                    -PercentComplete (($index / $total) * 100)
 
     if (-not $shouldInstall) {
-        $msg = "INFO: Installation skipped for '$name' (install = false)"
-        Write-Host $msg -ForegroundColor Yellow
-        Write-Log $msg
+        Write-AulaLog -Message "Instalación omitida para '$name' (install = false)" -Level INFO
         continue
     }
 
@@ -67,24 +62,23 @@ foreach ($app in $config) {
                 $argList = $app.parameters
                 if ($isMSI -and ($null -eq $argList -or $argList.Count -eq 0)) {
                     $argList = @("/qn", "/norestart", "ALLUSERS=1")
-                    Write-Log "INFO: Default MSI parameters assigned for $fileName"
+                    Write-AulaLog -Message "Parámetros MSI por defecto asignados para $fileName" -Level INFO
                 }
 
                 # Log and display the installation command
-                Write-Log "Executing $fileName with parameters: $($argList -join ' ')"
-                Write-Host "Executing $fileName with parameters: $($argList -join ' ')"
+                Write-AulaLog -Message "Ejecutando $fileName con parámetros: $($argList -join ' ')" -Level INFO
 
                 if ($isMSI) {
                     $argList = @("/i", "`"$filePath`"") + $argList
-                    Start-Process "msiexec.exe" -ArgumentList $argList -Wait -NoNewWindow
+                    Start-Process "msiexec.exe" -ArgumentList $argList -Wait -NoNewWindow -ErrorAction Stop
                 } else {
                     if ([string]::IsNullOrWhiteSpace($argList)) {
-                       Start-Process -FilePath $filePath -Wait -NoNewWindow
+                       Start-Process -FilePath $filePath -Wait -NoNewWindow -ErrorAction Stop
                     } else {
-                       Start-Process -FilePath $filePath -ArgumentList $argList -Wait -NoNewWindow
+                       Start-Process -FilePath $filePath -ArgumentList $argList -Wait -NoNewWindow -ErrorAction Stop
                     }
                 }
-                Write-Log "SUCCESS: Installation completed: $fileName"
+                Write-AulaLog -Message "Instalación completada exitosamente: $fileName" -Level SUCCESS
             }
 
             # Check for a post-reboot script to schedule
@@ -95,15 +89,13 @@ foreach ($app in $config) {
                     $command = "powershell.exe -ExecutionPolicy Bypass -File `"$postRebootScriptPath`""
                     $entryName = "PostInstall_$($name)"
                     
-                    Write-Log "INFO: Scheduling post-reboot script for $name : $postRebootScriptPath"
-                    Write-Host "INFO: Se ha programado un script para ejecutarse después del reinicio para $name." -ForegroundColor Green
+                    Write-AulaLog -Message "Se ha programado un script para ejecutarse después del reinicio para $name: $postRebootScriptPath" -Level SUCCESS
                     
-                    Set-ItemProperty -Path $runOnceKey -Name $entryName -Value $command -Force
+                    Set-ItemProperty -Path $runOnceKey -Name $entryName -Value $command -Force -ErrorAction Stop
 
                     $rebootRequired = $true
                 } else {
-                    Write-Log "WARNING: Post-reboot script not found for $name at $postRebootScriptPath"
-                    Write-Warning "No se encontró el script post-reinicio para $name en $postRebootScriptPath"
+                    Write-AulaLog -Message "No se encontró el script post-reinicio para $name en $postRebootScriptPath" -Level WARNING
                 }
             }
 
@@ -111,20 +103,18 @@ foreach ($app in $config) {
             if ($hasPostScript) {
                 $postScriptPath = Join-Path $projectRoot $app.postscript
                 if (Test-Path $postScriptPath) {
-                    Write-Log "Executing postscript for $name - $postScriptPath"
+                    Write-AulaLog -Message "Ejecutando post-script para $name - $postScriptPath" -Level INFO
                     & $postScriptPath
                 } else {
-                    Write-Log "WARNING: Post-install script not found for $name at $postScriptPath"
-                    Write-Warning "No se encontró el script post-instalación para $name en $postScriptPath"
+                    Write-AulaLog -Message "No se encontró el script post-instalación para $name en $postScriptPath" -Level WARNING
                 }
             }
         } catch {
-            Write-Log "ERROR: Error processing '$name' - $_"
+            $errorMessage = $_.Exception.Message
+            Write-AulaLog -Message "Error CRÍTICO al procesar '$name': $errorMessage" -Level ERROR
         }
     } else {
-        $msg = "WARNING: No installer or scripts found for '$name'. Skipping."
-        Write-Warning $msg
-        Write-Log $msg
+        Write-AulaLog -Message "No se encontraron instaladores ni scripts para '$name'. Omitiendo." -Level WARNING
     }
 }
 

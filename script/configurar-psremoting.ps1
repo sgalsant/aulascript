@@ -13,13 +13,16 @@
 . "$PSScriptRoot\utils.ps1"
 
 try {
-    Write-Host "Configurando la zona horaria a 'GMT Standard Time'..." -ForegroundColor Cyan
-    Set-TimeZone -Id 'GMT Standard Time'
-    Write-Host "Habilitando PowerShell Remoting..." -ForegroundColor Cyan
-    Enable-PSRemoting -SkipNetworkProfileCheck -Force
-    Write-Host "`nConfiguración del sistema completada." -ForegroundColor Green
+    Write-AulaLog -Message "Configurando la zona horaria a 'GMT Standard Time'..." -Level INFO
+    Set-TimeZone -Id 'GMT Standard Time' -ErrorAction Stop
+    
+    Write-AulaLog -Message "Habilitando PowerShell Remoting..." -Level INFO
+    Enable-PSRemoting -SkipNetworkProfileCheck -Force -ErrorAction Stop
+    
+    Write-AulaLog -Message "Configuración del sistema (Zona horaria y PSRemoting) completada." -Level SUCCESS
 }
 catch {
-    Write-Error "Ocurrió un error durante la configuración del sistema: $_"
+    $errorMessage = $_.Exception.Message
+    Write-AulaLog -Message "Ocurrió un error durante la configuración del sistema: $errorMessage" -Level ERROR
 }
 

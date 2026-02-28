@@ -7,7 +7,9 @@
     Está diseñado para ser llamado como un 'postscript' desde el instalador principal.
 #>
 
-Write-Host "Ejecutando post-script para VirtualBox: Instalando Extension Pack..." -ForegroundColor Cyan
+. "$PSScriptRoot\..\script\utils.ps1"
+
+Write-AulaLog -Message "Ejecutando post-script para VirtualBox: Instalando Extension Pack..." -Level INFO
 
 # --- CONFIGURACION ---
 $installersPath = "$PSScriptRoot\..\repo"
@@ -26,12 +28,13 @@ try {
         throw "No se encontró ningún archivo .vbox-extpack en la carpeta $installersPath"
     }
 
-    Write-Host "Instalando Extension Pack: $($extensionPack.Name)"
+    Write-AulaLog -Message "Instalando Extension Pack: $($extensionPack.Name)" -Level INFO
     # Se envía 'y' a través de una tubería (pipe) para aceptar la licencia de forma automática.
     Write-Output 'y' | & $vboxManagePath extpack install --replace "$($extensionPack.FullName)"
 
-    Write-Host "Extension Pack instalado correctamente." -ForegroundColor Green
+    Write-AulaLog -Message "Extension Pack instalado correctamente." -Level SUCCESS
 }
 catch {
-    Write-Warning "No se pudo instalar el VirtualBox Extension Pack. Error: $_"
+    $errorMessage = $_.Exception.Message
+    Write-AulaLog -Message "No se pudo instalar el VirtualBox Extension Pack. Error: $errorMessage" -Level ERROR
 }

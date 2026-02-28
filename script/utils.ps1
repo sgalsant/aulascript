@@ -3,6 +3,52 @@
     Contiene funciones de utilidad reutilizables para los scripts del proyecto.
 #>
 
+function Write-AulaLog {
+<#
+.SYNOPSIS
+    Escribe un mensaje en la consola y lo guarda en un archivo de log centralizado.
+.DESCRIPTION
+    Esta función proporciona un mecanismo estructurado para emitir mensajes (INFO, WARNING, ERROR)
+    con código de colores a la consola, y registrarlos concurrentemente en un archivo de log
+    con marcas de tiempo.
+#>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Message,
+        
+        [ValidateSet('INFO', 'WARNING', 'ERROR', 'SUCCESS')]
+        [string]$Level = 'INFO',
+
+        [string]$LogPath = "C:\Logs\AulaScript.log"
+    )
+
+    # Asegurar que el directorio del log existe
+    $logDir = Split-Path -Path $LogPath -Parent
+    if (-not (Test-Path -Path $logDir)) {
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+
+    # Formatear el mensaje
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logOutput = "$timestamp [$Level] $Message"
+
+    # Escribir a consola con colores apropiados
+    switch ($Level) {
+        'INFO'    { Write-Host $logOutput -ForegroundColor Cyan }
+        'SUCCESS' { Write-Host $logOutput -ForegroundColor Green }
+        'WARNING' { Write-Warning $Message } # Write-Warning automáticamente prefija con "WARNING:"
+        'ERROR'   { Write-Host $logOutput -ForegroundColor Red } # Write-Error es muy verboso, preferimos Host rojo
+    }
+
+    # Anexar al archivo de log usando compatibilidad amplia
+    try {
+        $logOutput | Out-File -FilePath $LogPath -Append -Encoding UTF8 -ErrorAction Stop
+    } catch {
+        Write-Host "No se pudo escribir en el archivo de log: $($_.Exception.Message)" -ForegroundColor DarkRed
+    }
+}
+
 function Wait-KeyWithTimeout {
 <#
 .SYNOPSIS
