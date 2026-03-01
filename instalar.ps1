@@ -20,6 +20,7 @@ function Show-Menu {
     Write-Host "=============================================" -ForegroundColor Cyan
     Write-Host " 6 - Crear menú de arranque con opciones de hyperv (beta)"
     Write-Host " 7 - Instalar extensión de virtualbox"
+    Write-Host " 8 - Configurar opciones de Hyper-V"
     Write-Host "=============================================" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -29,7 +30,8 @@ function Invoke-AulaScript {
     $fullPath = Join-Path $PSScriptRoot $ScriptPath
     if (Test-Path $fullPath) {
         & $fullPath
-    } else {
+    }
+    else {
         Write-Warning "No se encontró el script: $fullPath"
     }
     
@@ -94,6 +96,11 @@ while ($true) {
             Clear-Host
             Write-Host "=============================================`n 7. Instalar extension de virtualbox...`n=============================================" -ForegroundColor Yellow
             Invoke-AulaScript -ScriptPath "postscript\virtualbox-ext.ps1"
+        }
+        "8" {
+            Clear-Host
+            Write-Host "=============================================`n 8. CONFIGURANDO OPCIONES DE HYPER-V...`n=============================================" -ForegroundColor Yellow
+            Invoke-AulaScript -ScriptPath "script\HyperV_Setup.ps1"
         }
         "0" {
             Write-Host "`nSaliendo del menú..."
