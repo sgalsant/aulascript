@@ -89,7 +89,7 @@ foreach ($app in $config) {
                     $command = "powershell.exe -ExecutionPolicy Bypass -File `"$postRebootScriptPath`""
                     $entryName = "PostInstall_$($name)"
                     
-                    Write-AulaLog -Message "Se ha programado un script para ejecutarse después del reinicio para $name: $postRebootScriptPath" -Level SUCCESS
+                    Write-AulaLog -Message "Se ha programado un script para ejecutarse después del reinicio para $name : $postRebootScriptPath" -Level SUCCESS
                     
                     Set-ItemProperty -Path $runOnceKey -Name $entryName -Value $command -Force -ErrorAction Stop
 

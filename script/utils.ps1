@@ -4,7 +4,7 @@
 #>
 
 function Write-AulaLog {
-<#
+    <#
 .SYNOPSIS
     Escribe un mensaje en la consola y lo guarda en un archivo de log centralizado.
 .DESCRIPTION
@@ -14,13 +14,13 @@ function Write-AulaLog {
 #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Message,
         
         [ValidateSet('INFO', 'WARNING', 'ERROR', 'SUCCESS')]
         [string]$Level = 'INFO',
 
-        [string]$LogPath = "C:\Logs\AulaScript.log"
+        [string]$LogPath = $(if ($env:AULA_LOG_FILE) { $env:AULA_LOG_FILE } else { "C:\Logs\AulaScript.log" })
     )
 
     # Asegurar que el directorio del log existe
@@ -35,22 +35,23 @@ function Write-AulaLog {
 
     # Escribir a consola con colores apropiados
     switch ($Level) {
-        'INFO'    { Write-Host $logOutput -ForegroundColor Cyan }
+        'INFO' { Write-Host $logOutput -ForegroundColor Cyan }
         'SUCCESS' { Write-Host $logOutput -ForegroundColor Green }
         'WARNING' { Write-Warning $Message } # Write-Warning automáticamente prefija con "WARNING:"
-        'ERROR'   { Write-Host $logOutput -ForegroundColor Red } # Write-Error es muy verboso, preferimos Host rojo
+        'ERROR' { Write-Host $logOutput -ForegroundColor Red } # Write-Error es muy verboso, preferimos Host rojo
     }
 
     # Anexar al archivo de log usando compatibilidad amplia
     try {
         $logOutput | Out-File -FilePath $LogPath -Append -Encoding UTF8 -ErrorAction Stop
-    } catch {
+    }
+    catch {
         Write-Host "No se pudo escribir en el archivo de log: $($_.Exception.Message)" -ForegroundColor DarkRed
     }
 }
 
 function Wait-KeyWithTimeout {
-<#
+    <#
 .SYNOPSIS
     Pausa la ejecución del script hasta que el usuario presiona una tecla o se agota un tiempo de espera.
 .DESCRIPTION

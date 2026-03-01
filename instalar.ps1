@@ -3,6 +3,14 @@
 # Configurar el encoding a UTF8 para caracteres especiales
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# --- LOG DE SESIÓN CENTRALIZADO ---
+# Crear un único archivo de log para toda la sesión del menú.
+# Se publica como variable de entorno de proceso para que todos los scripts hijos lo hereden.
+$_sessionLog = Join-Path $PSScriptRoot "$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+$env:AULA_LOG_FILE = $_sessionLog
+"$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [$($env:COMPUTERNAME)] === INICIO DE SESIÓN AulaScript ===" |
+Out-File -FilePath $env:AULA_LOG_FILE -Encoding UTF8
+
 function Show-Menu {
     Clear-Host
     Write-Host "========================================================" -ForegroundColor Cyan

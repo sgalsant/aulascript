@@ -31,10 +31,16 @@ param(
 # --- CONFIGURACIÓN GLOBAL ---
 # ============================================================
 $ScriptPath = $MyInvocation.MyCommand.Path
-$BaseDir = (Get-Item $PSScriptRoot).Parent.FullName
 $NombreHost = $env:COMPUTERNAME
 $FechaHora = Get-Date -Format "yyyyMMdd_HHmmss"
-$LogFile = Join-Path -Path $BaseDir -ChildPath "HyperV_Setup_${NombreHost}_${FechaHora}.log"
+# Usar el log de sesión centralizado si existe (lanzado desde el menú), o crear uno propio (ejecución directa)
+$LogFile = if ($env:AULA_LOG_FILE) {
+    $env:AULA_LOG_FILE
+}
+else {
+    $BaseDir = (Get-Item $PSScriptRoot).Parent.FullName
+    Join-Path -Path $BaseDir -ChildPath "HyperV_Setup_${NombreHost}_${FechaHora}.log"
+}
 $TareaName = "HyperV_Setup_PostReinicio"
 $HyperVSID = "S-1-5-32-578"
 
