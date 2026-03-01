@@ -108,21 +108,34 @@ else {
 # ============================================================
 # --- 3. HABILITAR HYPER-V ---
 # ============================================================
-Write-Log "`n[3/7] Comprobando característica Hyper-V..." "Yellow"
+Write-Log "`n[3/7] Comprobando caracteristica Hyper-V..." "Yellow"
 $necesitaReinicio = $false
+
+# Suprimir barra de progreso para evitar bloqueos en sesiones remotas/no interactivas
+$ProgressPreference = 'SilentlyContinue'
 
 try {
     $hypervFeature = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -ErrorAction Stop
 
     if ($hypervFeature.State -ne 'Enabled') {
-        Write-Log "   Instalando Hyper-V (puede tardar varios minutos)..." "Cyan"
-        $resultado = Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart -ErrorAction Stop
-        if ($resultado.RestartNeeded) {
-            $necesitaReinicio = $true
-            Write-Log "   [OK] Instalación completada. Se requiere reinicio." "Yellow"
-        }
-        else {
-            Write-Log "   [OK] Hyper-V instalado sin necesidad de reinicio." "Green"
+        Write-Log "   Instalando Hyper-V con DISM (puede tardar varios minutos)..." "Cyan"
+
+        # Usar DISM.exe directamente: mas fiable que Enable-WindowsOptionalFeature
+        # que puede bloquearse intentando contactar Windows Update o mostrar progreso UI.
+        $dismArgs = @('/Online', '/Enable-Feature', '/FeatureName:Microsoft-Hyper-V', '/All', '/NoRestart', '/Quiet')
+        $dismResult = Start-Process -FilePath 'DISM.exe' -ArgumentList $dismArgs -Wait -PassThru -NoNewWindow
+
+        switch ($dismResult.ExitCode) {
+            0 {
+                Write-Log "   [OK] Hyper-V instalado. No se requiere reinicio." "Green"
+            }
+            3010 {
+                $necesitaReinicio = $true
+                Write-Log "   [OK] Hyper-V instalado. Se requiere reinicio para completar." "Yellow"
+            }
+            default {
+                throw "DISM finalizo con codigo de error: $($dismResult.ExitCode)"
+            }
         }
     }
     else {
@@ -230,23 +243,46 @@ if (Get-VMSwitch -Name $nombreSwitchExt -ErrorAction SilentlyContinue) {
     Write-Log "   [OK] Conmutador externo '$nombreSwitchExt' ya existe." "DarkGray"
 }
 else {
-    $adaptadorActivo = Get-NetAdapter | Where-Object {
-        $_.Status -eq 'Up' -and $_.Virtual -eq $false -and
-        $_.InterfaceDescription -notmatch "VirtualBox|VMware|VPN|TAP|Hyper-V|Cisco"
+    # Seleccionar el primer adaptador activo que NO sea loopback, TAP, VPN o de otra herramienta de virtualizacion.
+    # NOTA: dentro de una VM Hyper-V todos los adaptadores son "Microsoft Hyper-V Network Adapter",
+    #       por lo que NO se excluye "Hyper-V" del filtro de descripcion.
+    $adaptadoresActivos = Get-NetAdapter | Where-Object {
+        $_.Status -eq 'Up' -and
+        $_.InterfaceDescription -notmatch "VirtualBox|VMware|VPN|TAP|Cisco|Loopback|WireGuard"
+    }
+
+    # Excluir adaptadores que ya estan vinculados a un conmutador virtual existente
+    # (causaria el error "La secuencia no contiene ningun elemento coincidente")
+    $switchesExistentes = Get-VMSwitch -ErrorAction SilentlyContinue
+    $adaptadoresEnUso = $switchesExistentes | Where-Object { $_.SwitchType -eq 'External' } |
+    ForEach-Object { $_.NetAdapterInterfaceDescription }
+
+    $adaptadorActivo = $adaptadoresActivos | Where-Object {
+        $_.InterfaceDescription -notin $adaptadoresEnUso
     } | Select-Object -First 1
+
+    # Mostrar los adaptadores candidatos para facilitar el diagnostico
+    Write-Log "   Adaptadores en uso por switches: $(($adaptadoresEnUso -join ', ') -replace '^$', 'ninguno')" "DarkGray"
+    if ($adaptadoresActivos) {
+        $adaptadoresActivos | ForEach-Object {
+            Write-Log "   Candidato: '$($_.Name)' - $($_.InterfaceDescription)" "DarkGray"
+        }
+    }
 
     if ($adaptadorActivo) {
         try {
-            Write-Log "   Creando conmutador externo en: $($adaptadorActivo.Name)..." "Cyan"
+            Write-Log "   Creando conmutador externo en: $($adaptadorActivo.Name) ($($adaptadorActivo.InterfaceDescription))..." "Cyan"
             New-VMSwitch -Name $nombreSwitchExt -NetAdapterName $adaptadorActivo.Name -AllowManagementOS $true -ErrorAction Stop | Out-Null
             Write-Log "   [OK] Conmutador '$nombreSwitchExt' creado." "Green"
         }
         catch {
             Write-Log "   [ERROR] Fallo al crear conmutador externo: $_" "Red"
+            Write-Log "   Adaptador intentado: '$($adaptadorActivo.Name)'" "Red"
         }
     }
     else {
-        Write-Log "   [ADVERTENCIA] No se encontró tarjeta física activa para la red externa." "Yellow"
+        Write-Log "   [ADVERTENCIA] No se encontro tarjeta de red disponible (sin asignar a otro switch) para la red externa." "Yellow"
+        Write-Log "   Si ya existe un switch externo con otro nombre, puede ignorar este aviso." "DarkGray"
     }
 }
 

@@ -32,8 +32,8 @@ param (
 # --- CONFIGURACION DE AULAS ---
 # Centralizar la configuración en una tabla hash para facilitar el mantenimiento.
 $classroomConfigs = @{
-    '5'  = @{ BaseIPNetwork = '10.5.0.';  BaseOctet = 50; DefaultGateway = '10.5.0.1';  DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
-    '6'  = @{ BaseIPNetwork = '10.6.0.';  BaseOctet = 50; DefaultGateway = '10.6.0.1';  DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
+    '5'  = @{ BaseIPNetwork = '10.5.0.'; BaseOctet = 50; DefaultGateway = '10.5.0.1'; DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
+    '6'  = @{ BaseIPNetwork = '10.6.0.'; BaseOctet = 50; DefaultGateway = '10.6.0.1'; DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
     '11' = @{ BaseIPNetwork = '10.11.0.'; BaseOctet = 50; DefaultGateway = '10.11.0.1'; DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
     '12' = @{ BaseIPNetwork = '192.168.5.'; BaseOctet = 50; DefaultGateway = '192.168.5.1'; DefaultPrefixLength = 24; DNSServers = @('8.8.8.8') }
 }
@@ -50,8 +50,8 @@ while ($true) {
     foreach ($key in $classroomConfigs.Keys | Sort-Object) {
         Write-Host "  [$key] - Aula $key"
     }
-    Write-Host "  [D] - Configurar con DHCP (Automático)"
-    $choice = Read-Host "`nIntroduzca su selección"
+    Write-Host "  [D] - Configurar con DHCP (Automatico)"
+    $choice = Read-Host "`nIntroduzca su seleccion"
 
     if ($choice.ToLower() -eq 'd') {
         $useDhcp = $true
@@ -67,7 +67,7 @@ while ($true) {
         break
     }
     else {
-        Write-AulaLog -Message "Selección no válida. Por favor, inténtelo de nuevo." -Level WARNING
+        Write-AulaLog -Message "Seleccion no valida. Por favor, intentelo de nuevo." -Level WARNING
         Start-Sleep -Seconds 2
         Clear-Host
     }
@@ -82,8 +82,9 @@ if (-not $PSBoundParameters.ContainsKey('InterfaceAlias')) {
 
     if ($activeAdapter) {
         $InterfaceAlias = $activeAdapter.Name
-        Write-AulaLog -Message "Interfaz detectada automáticamente: '$InterfaceAlias'" -Level SUCCESS
-    } else {
+        Write-AulaLog -Message "Interfaz detectada automaticamente: '$InterfaceAlias'" -Level SUCCESS
+    }
+    else {
         Write-AulaLog -Message "No se pudo detectar un adaptador de red cableado y activo. Se usará el valor por defecto: '$InterfaceAlias'." -Level WARNING
         Write-AulaLog -Message "Si el script falla, compruebe las conexiones de red o ejecútelo de nuevo especificando el nombre correcto, ej: -InterfaceAlias 'Ethernet 2'" -Level WARNING
     }
@@ -99,15 +100,17 @@ Write-Host
 Write-Host "  Interfaz: $InterfaceAlias"
 
 if ($useDhcp) {
-    Write-Host "  Modo....: DHCP (Automático)"
-} else {
+    Write-Host "  Modo....: DHCP (Automatico)"
+}
+else {
     # Si no se proporcionó una IP, la calculamos
     if ([string]::IsNullOrWhiteSpace($IPAddress)) {
         try {
             # Extraer los dígitos finales del nombre del equipo. Ej: PC-07 -> 7, AULA1-15 -> 15
             if ([System.Environment]::MachineName -match '(\d+)$') {
                 $hostNumber = [int]$Matches[1]
-            } else {
+            }
+            else {
                 Write-AulaLog -Message "No se encontraron dígitos al final del nombre del equipo. Usando 0." -Level WARNING
                 $hostNumber = 0
             }
@@ -116,7 +119,8 @@ if ($useDhcp) {
             if ($finalOctet -gt 254) { $finalOctet = 254 }
 
             $IPAddress = "$($selectedConfig.BaseIPNetwork)$finalOctet"
-        } catch {
+        }
+        catch {
             Write-AulaLog -Message "No se pudo calcular la IP a partir del nombre del equipo. Error: $_" -Level ERROR
             exit 1
         }
@@ -127,15 +131,15 @@ if ($useDhcp) {
     if ($null -eq $DNSServers -or $DNSServers.Count -eq 0) { $DNSServers = $selectedConfig.DNSServers }
     if ($PrefixLength -eq 0) { $PrefixLength = $selectedConfig.DefaultPrefixLength }
 
-    Write-Host "  Dirección IP........: $IPAddress"
-    Write-Host "  Máscara de subred...: (/$PrefixLength)"
+    Write-Host "  Direccion IP........: $IPAddress"
+    Write-Host "  Mascara de subred...: (/$PrefixLength)"
     Write-Host "  Puerta de enlace....: $Gateway"
     Write-Host "  Servidores DNS......: $($DNSServers -join ', ')"
 }
 Write-Host "================================================="
 
 # El script continuará si se introduce 's' o se presiona Enter. Cualquier otra tecla cancelará.
-$confirm = Read-Host "`n¿Aplicar esta configuración? [S/n]"
+$confirm = Read-Host "`nAplicar esta configuracion? [S/n]"
 if ($confirm.ToLower() -notin @('s', '')) {
     Write-AulaLog -Message "Operación cancelada por el usuario." -Level WARNING
     Start-Sleep -Seconds 3
@@ -152,13 +156,15 @@ try {
         Set-NetIPInterface -InterfaceIndex $adapter.InterfaceIndex -Dhcp Enabled -ErrorAction Stop
         Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ResetServerAddresses -ErrorAction Stop
         Write-AulaLog -Message "Configuración DHCP completada." -Level SUCCESS
-    } else {
+    }
+    else {
         # Eliminar IPs y Gateways previos para evitar conflictos
         # Primero se elimina la ruta por defecto (Gateway) para evitar problemas
         try {
             Remove-NetRoute -InterfaceIndex $adapter.InterfaceIndex -DestinationPrefix 0.0.0.0/0 -Confirm:$false -ErrorAction Stop
             Get-NetIPAddress -InterfaceIndex $adapter.InterfaceIndex -AddressFamily IPv4 -ErrorAction Stop | Remove-NetIPAddress -Confirm:$false -ErrorAction Stop
-        } catch {
+        }
+        catch {
             Write-AulaLog -Message "Advertencia al purgar rutas previas (puede ignorarse si estaba limpia): $($_.Exception.Message)" -Level WARNING
         }
         
@@ -167,6 +173,7 @@ try {
         Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ServerAddresses $DNSServers -ErrorAction Stop
         Write-AulaLog -Message "Configuración de red estática completada exitosamente." -Level SUCCESS
     }
-} catch {
-    Write-AulaLog -Message "Ocurrió un error CRÍTICO al aplicar la configuración de red: $($_.Exception.Message)" -Level ERROR
+}
+catch {
+    Write-AulaLog -Message "Ocurrio un error CRITICO al aplicar la configuracion de red: $($_.Exception.Message)" -Level ERROR
 }

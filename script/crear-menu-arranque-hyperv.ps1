@@ -1,7 +1,7 @@
 # Importar funciones de utilidad para usar Write-AulaLog
 . "$PSScriptRoot\utils.ps1"
 
-Write-AulaLog -Message "La opción de crear un menú de arranque para Hyper-V se encuentra temporalmente DESHABILITADA." -Level WARNING
+Write-AulaLog -Message "La opcion de crear un menu de arranque para Hyper-V se encuentra temporalmente DESHABILITADA." -Level WARNING
 exit
 
 Write-AulaLog -Message "Entradas actuales del menú de arranque:" -Level INFO
@@ -20,14 +20,14 @@ foreach ($entry in $entries) {
 }
 
 # Descripciones de las nuevas entradas
-$descHv   = "Windows con Hyper-V (Docker/WSL2)"
+$descHv = "Windows con Hyper-V (Docker/WSL2)"
 $descNoHv = "Windows sin Hyper-V (VMware/VirtualBox rápido)"
 
 Write-Host "`n Este script añadirá dos entradas nuevas al menú de arranque:"
 Write-Host "   '$descHv' → activa Hyper-V, necesario para Docker Desktop y WSL 2"
 Write-Host "   '$descNoHv' → desactiva Hyper-V, mejora rendimiento en VMware y VirtualBox"
 Write-Host "   La entrada con Hyper-V se establecerá como predeterminada (se arranca por defecto)"
-Write-Host "`n¿Deseás continuar y realizar estos cambios? (s/n)"
+Write-Host "`nDeseas continuar y realizar estos cambios? (s/n)"
 
 $response = Read-Host
 if ($response -ne "s" -and $response -ne "S") {
@@ -57,10 +57,12 @@ try {
         $hvId = ($hvId | Select-String -Pattern "\{.+\}").Matches.Value
         if ($hvId) {
             bcdedit /set $hvId hypervisorlaunchtype auto | Out-Null
-        } else {
+        }
+        else {
             throw "No se pudo extraer el ID al crear la entrada $descHv"
         }
-    } else {
+    }
+    else {
         Write-AulaLog -Message "La entrada ya existe: $descHv" -Level SUCCESS
     }
 
@@ -71,10 +73,12 @@ try {
         $nohId = ($nohId | Select-String -Pattern "\{.+\}").Matches.Value
         if ($nohId) {
             bcdedit /set $nohId hypervisorlaunchtype off | Out-Null
-        } else {
+        }
+        else {
             throw "No se pudo extraer el ID al crear la entrada $descNoHv"
         }
-    } else {
+    }
+    else {
         Write-AulaLog -Message "La entrada ya existe: $descNoHv" -Level SUCCESS
     }
 
@@ -87,8 +91,9 @@ try {
 
     Write-AulaLog -Message "Configuración del menú de arranque finalizada. Reinicia el equipo para probar las opciones." -Level SUCCESS
 
-} catch {
+}
+catch {
     $errorMessage = $_.Exception.Message
-    Write-AulaLog -Message "Error CRÍTICO modificando el menú de arranque: $errorMessage" -Level ERROR
+    Write-AulaLog -Message "Error CRITICO modificando el menu de arranque: $errorMessage" -Level ERROR
 }
 

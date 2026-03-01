@@ -37,7 +37,7 @@ function Write-AulaLog {
     switch ($Level) {
         'INFO' { Write-Host $logOutput -ForegroundColor Cyan }
         'SUCCESS' { Write-Host $logOutput -ForegroundColor Green }
-        'WARNING' { Write-Warning $Message } # Write-Warning automáticamente prefija con "WARNING:"
+        'WARNING' { Write-Warning $Message } # Write-Warning automaticamente prefija con "WARNING:"
         'ERROR' { Write-Host $logOutput -ForegroundColor Red } # Write-Error es muy verboso, preferimos Host rojo
     }
 
@@ -82,7 +82,7 @@ function Wait-KeyWithTimeout {
     # Bucle de cuenta atrás
     for ($i = $Timeout; $i -gt 0; $i--) {
         # Muestra el contador y lo sobrescribe en cada iteración
-        $countdownMessage = "Continuando automáticamente en $i segundos... "
+        $countdownMessage = "Continuando automaticamente en $i segundos... "
         Write-Host -NoNewline "`r$countdownMessage"
 
         # Comprueba si se ha presionado una tecla sin bloquear el script

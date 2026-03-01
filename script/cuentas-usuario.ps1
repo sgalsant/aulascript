@@ -5,13 +5,13 @@
 
 # --- FUNCIONES ---
 
-function Ensure-ClassroomUser {
+function Set-ClassroomUser {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$UserName,
         
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$UsersGroupName
     )
 
@@ -22,7 +22,8 @@ function Ensure-ClassroomUser {
         
         if ($existingUser) {
             Write-AulaLog -Message "[OK] El usuario '$UserName' ya existe. Omitiendo creación." -Level SUCCESS
-        } else {
+        }
+        else {
             Write-AulaLog -Message "[+] Creando el usuario '$UserName'..." -Level INFO
             $password = ConvertTo-SecureString $UserName -AsPlainText -Force
             
@@ -57,7 +58,7 @@ $grupo_usuarios = $grupo_usuariosSID.Translate([System.Security.Principal.NTAcco
 Write-AulaLog -Message "Iniciando creación de usuarios..." -Level INFO
 
 foreach ($usuario in $usuarios) {
-    Ensure-ClassroomUser -UserName $usuario -UsersGroupName $grupo_usuarios
+    Set-ClassroomUser -UserName $usuario -UsersGroupName $grupo_usuarios
 }
 
 # --- CREACION DE CARPETAS PERSONALES (INTERACTIVO CON VALIDACION) ---
@@ -77,7 +78,7 @@ while ($true) {
         break
     }
     else {
-        Write-AulaLog -Message "La unidad '$($driveLetter):' no existe. Por favor, inténtelo de nuevo." -Level WARNING
+        Write-AulaLog -Message "La unidad '$($driveLetter):' no existe. Por favor, intentelo de nuevo." -Level WARNING
     }
 }
 
