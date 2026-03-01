@@ -248,7 +248,7 @@ else {
     #       por lo que NO se excluye "Hyper-V" del filtro de descripcion.
     $adaptadoresActivos = Get-NetAdapter | Where-Object {
         $_.Status -eq 'Up' -and
-        $_.InterfaceDescription -notmatch "VirtualBox|VMware|VPN|TAP|Cisco|Loopback|WireGuard"
+        $_.InterfaceDescription -notmatch "VirtualBox|VMware|VPN|TAP|Cisco|Loopback|WireGuard|Virtual Ethernet Adapter"
     }
 
     # Excluir adaptadores que ya estan vinculados a un conmutador virtual existente
