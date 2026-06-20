@@ -12,8 +12,7 @@ Set-StrictMode -Version 2
 # Se publica como variable de entorno de proceso para que todos los scripts hijos lo hereden.
 $_sessionLog = Join-Path $PSScriptRoot "$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 $env:AULA_LOG_FILE = $_sessionLog
-"$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [$($env:COMPUTERNAME)] === INICIO DE SESION AulaScript ===" |
-Out-File -FilePath $env:AULA_LOG_FILE -Encoding UTF8
+Write-AulaLog -Message "=== INICIO DE SESION AulaScript ===" -Level INFO
 
 function Show-Menu {
     Clear-Host
@@ -115,8 +114,7 @@ while ($true) {
             Invoke-AulaScript -ScriptPath "script\HyperV_Setup.ps1"
         }
         "0" {
-            "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [$($env:COMPUTERNAME)] === FIN DE SESION AulaScript ===" |
-            Out-File -FilePath $env:AULA_LOG_FILE -Append -Encoding UTF8
+            Write-AulaLog -Message "=== FIN DE SESION AulaScript ===" -Level INFO
             Write-Host "`nSaliendo del menu..."
             exit
         }
