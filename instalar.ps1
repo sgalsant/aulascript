@@ -87,7 +87,12 @@ do {
         if ($opcion -ne '0') {
             Write-AulaLog -Message "Iniciando: $($record.Label)" -Level INFO
             try {
-                & $record.Action
+                # Mantener el modo estricto limitado al dispatcher. Los scripts hijos
+                # son anteriores a este refactor y conservan su semántica no estricta.
+                & {
+                    Set-StrictMode -Off
+                    & $record.Action
+                }
                 Write-AulaLog -Message "Finalizado: $($record.Label)" -Level SUCCESS
             }
             catch {
