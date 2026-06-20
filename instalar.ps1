@@ -45,9 +45,6 @@ $menuActions = [ordered]@{
                 }
             };
             PostPause = $true }
-    '6' = @{ Label = 'Crear menu de arranque con opciones de hyperv (beta)';
-            Action = { & (Join-Path $scriptDir 'crear-menu-arranque-hyperv.ps1') };
-            PostPause = $true }
     '7' = @{ Label = 'Instalar extension de virtualbox';
             Action = { & (Join-Path $postDir 'virtualbox-ext.ps1') };
             PostPause = $true }
@@ -66,13 +63,19 @@ function Show-Menu {
     Write-Host " (Ejecutando como Administrador, compatible con PSRemoting)" -ForegroundColor DarkGray
     Write-Host ""
     foreach ($k in $menuActions.Keys) {
-        Write-Host (" {0} - {1}" -f $k, $menuActions[$k].Label)
+        $menuLine = " {0} - {1}" -f $k, $menuActions[$k].Label
+        if ($k -eq '5') {
+            Write-Host $menuLine -ForegroundColor Green
+        }
+        else {
+            Write-Host $menuLine
+        }
     }
     Write-Host ""
 }
 
 # --- BUCLE PRINCIPAL: dispatch unificado basado en $menuActions ---
-# Cada opcion (1-8, 0) pasa por el mismo camino: log del pick, log de inicio,
+# Cada opcion declarada pasa por el mismo camino: log del pick, log de inicio,
 # ejecutar Action bajo try/catch, log de resultado, pausa post-accion condicional.
 # La unica salida es $opcion -eq '0' (Salir), que rompe el bucle por la
 # condicion del do/while y termina con el marcador FIN DE SESION.

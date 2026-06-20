@@ -1,5 +1,6 @@
 param(
-    [switch]$NoRestore
+    [switch]$NoRestore,
+    [switch]$IncludeRepo
 )
 
 $VMName = "VM-Aula"
@@ -45,19 +46,41 @@ if (-not $isReady) {
 $session = New-PSSession -VMName $VMName -Credential $cred
 
 Write-Host "Limpiando directorio destino previo en la VM..." -ForegroundColor Gray
-Invoke-Command -Session $session -ScriptBlock {
-    if (Test-Path "C:\aulascript") { Remove-Item -Path "C:\aulascript" -Recurse -Force }
-    New-Item -Path "C:\aulascript" -ItemType Directory | Out-Null
+try {
+    Invoke-Command -Session $session -ArgumentList $RemoteProjectPath -ScriptBlock {
+        param([string]$DestinationPath)
+
+        if (Test-Path -LiteralPath $DestinationPath) {
+            Remove-Item -LiteralPath $DestinationPath -Recurse -Force -ErrorAction Stop
+        }
+
+        New-Item -Path $DestinationPath -ItemType Directory -ErrorAction Stop | Out-Null
+    } -ErrorAction Stop
+}
+catch {
+    Remove-PSSession -Session $session
+    throw "No se pudo limpiar '$RemoteProjectPath' en la VM. Cierre cualquier instalador o proceso que este usando archivos de esa carpeta y vuelva a ejecutar el laboratorio. Detalle: $($_.Exception.Message)"
 }
 
 Write-Host "Copiando archivos necesarios a la VM ($RemoteProjectPath)..." -ForegroundColor Cyan
 # Obtenemos solo los archivos y carpetas estrictamente necesarios para los scripts
 $elementosRequeridos = @("script", "postscript", "instalar.ps1", "instalar.bat", "aplicaciones.json")
 
+if ($IncludeRepo) {
+    Write-Host "[INFO] Incluyendo directorio repo en la copia a la VM (se reemplaza por completo)." -ForegroundColor Yellow
+    $elementosRequeridos += "repo"
+}
+
 foreach ($item in $elementosRequeridos) {
     $itemPath = Join-Path -Path $LocalProjectPath -ChildPath $item
     if (Test-Path $itemPath) {
-        Copy-Item -Path $itemPath -Destination $RemoteProjectPath -Recurse -ToSession $session -Force
+        try {
+            Copy-Item -Path $itemPath -Destination $RemoteProjectPath -Recurse -ToSession $session -Force -ErrorAction Stop
+        }
+        catch {
+            Remove-PSSession -Session $session
+            throw "No se pudo copiar '$item' a la VM. Cierre cualquier proceso que este usando archivos en '$RemoteProjectPath\$item' y vuelva a ejecutar el laboratorio. Detalle: $($_.Exception.Message)"
+        }
     }
     else {
         Write-Warning "El archivo o carpeta '$item' no se encontro en el host."

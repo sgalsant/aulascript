@@ -10,7 +10,7 @@
   {
     "name": "7z",
     "parameters": [
-      "/qn"
+      "/S"
     ]
   },
   {
@@ -69,6 +69,13 @@
       "ADDLOCAL=ALL ALLUSERS=1 INSTALL_DESKTOP_SHORTCUT=1"
     ],
     "postscript": "postscript/virtualbox-ext.ps1"
+  },
+  {
+    "name": "SEB",
+    "parameters": [
+      "/quiet",
+      "/norestart"
+    ]
   },
   {
     "name": "vscode",
