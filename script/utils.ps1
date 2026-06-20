@@ -98,3 +98,12 @@ function Wait-KeyWithTimeout {
     # Asegura una nueva línea al final, tanto si se agota el tiempo como si se presiona una tecla.
     Write-Host ""
 }
+
+function Wait-Enter {
+    [CmdletBinding()]
+    param(
+        [string]$Message = "Presione ENTER para continuar..."
+    )
+    Write-Host $Message -NoNewline
+    [void][System.Console]::ReadLine()
+}
