@@ -1,4 +1,8 @@
 #requires -RunAsAdministrator
+[CmdletBinding()]
+param()
+. "$PSScriptRoot\script\utils.ps1"
+Set-StrictMode -Version 2
 
 # Configurar el encoding a UTF8 para caracteres especiales
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
