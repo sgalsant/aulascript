@@ -14,6 +14,49 @@ $_sessionLog = Join-Path $PSScriptRoot "$($env:COMPUTERNAME)_$(Get-Date -Format 
 $env:AULA_LOG_FILE = $_sessionLog
 Write-AulaLog -Message "=== INICIO DE SESION AulaScript ===" -Level INFO
 
+# --- TABLA DE ACCIONES DEL MENU ---
+# Rutas base a sub-scripts (capturadas por closure en los Action scriptblocks).
+$scriptRoot = $PSScriptRoot
+$scriptDir  = Join-Path $scriptRoot 'script'
+$postDir    = Join-Path $scriptRoot 'postscript'
+
+# Tabla de acciones: clave = opcion del menu; valor = @{ Label, Action, PostPause }.
+# PostPause = $false solo para '0' (Salir). El resto lleva PostPause = $true
+# (explícito, porque Set-StrictMode v2 NO permite leer una propiedad ausente
+# de un hashtable — $record.PostPause lanzaria PropertyNotFoundException).
+$menuActions = [ordered]@{
+    '1' = @{ Label = 'Configurar Sistema (Zona Horaria, PSRemoting)';
+            Action = { & (Join-Path $scriptDir 'configurar-psremoting.ps1') };
+            PostPause = $true }
+    '2' = @{ Label = 'Configurar direccion de red estatica';
+            Action = { & (Join-Path $scriptDir 'cambiar-ip.ps1') };
+            PostPause = $true }
+    '3' = @{ Label = 'Crear cuentas de usuario';
+            Action = { & (Join-Path $scriptDir 'cuentas-usuario.ps1') };
+            PostPause = $true }
+    '4' = @{ Label = 'Instalar aplicaciones';
+            Action = { & (Join-Path $scriptDir 'instalar-aplicaciones.ps1') };
+            PostPause = $true }
+    '5' = @{ Label = 'Ejecutar todas las tareas (1-4)';
+            Action = {
+                foreach ($k in '1','2','3','4') {
+                    Write-AulaLog -Message "Sub-tarea $k" -Level INFO
+                    & $menuActions[$k].Action
+                }
+            };
+            PostPause = $true }
+    '6' = @{ Label = 'Crear menu de arranque con opciones de hyperv (beta)';
+            Action = { & (Join-Path $scriptDir 'crear-menu-arranque-hyperv.ps1') };
+            PostPause = $true }
+    '7' = @{ Label = 'Instalar extension de virtualbox';
+            Action = { & (Join-Path $postDir 'virtualbox-ext.ps1') };
+            PostPause = $true }
+    '8' = @{ Label = 'Configurar opciones de Hyper-V';
+            Action = { & (Join-Path $scriptDir 'HyperV_Setup.ps1') };
+            PostPause = $true }
+    '0' = @{ Label = 'Salir'; Action = { }; PostPause = $false }
+}
+
 function Show-Menu {
     Clear-Host
     Write-Host "========================================================" -ForegroundColor Cyan
