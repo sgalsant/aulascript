@@ -65,17 +65,9 @@ function Show-Menu {
     Write-Host ""
     Write-Host " (Ejecutando como Administrador, compatible con PSRemoting)" -ForegroundColor DarkGray
     Write-Host ""
-    Write-Host " 1 - Configurar Sistema (Zona Horaria, PSRemoting)"
-    Write-Host " 2 - Configurar direccion de red estatica"
-    Write-Host " 3 - Crear cuentas de usuario"
-    Write-Host " 4 - Instalar aplicaciones"
-    Write-Host " 5 - Ejecutar todas las tareas (1-4)"
-    Write-Host " 0 - Salir"
-    Write-Host "=============================================" -ForegroundColor Cyan
-    Write-Host " 6 - Crear menu de arranque con opciones de hyperv (beta)"
-    Write-Host " 7 - Instalar extension de virtualbox"
-    Write-Host " 8 - Configurar opciones de Hyper-V"
-    Write-Host "=============================================" -ForegroundColor Cyan
+    foreach ($k in $menuActions.Keys) {
+        Write-Host (" {0} - {1}" -f $k, $menuActions[$k].Label)
+    }
     Write-Host ""
 }
 
