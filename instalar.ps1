@@ -95,8 +95,8 @@ do {
             }
         }
 
-        if ($record.PostPause) {
-            Wait-Enter -Message "Presione ENTER para volver al menu..."
+        if ($record.PostPause -ne $false) {
+            Wait-Enter -Message "Tarea completada. Presione ENTER para volver al menu..."
         }
     }
     else {
