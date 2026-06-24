@@ -15,31 +15,116 @@ $projectRoot = (Split-Path -Path $PSScriptRoot -Parent)
 # Flag to track if a reboot is needed
 $rebootRequired = $false
 
+function Test-AppSelectedByDefault {
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$App
+    )
+
+    if ($App.PSObject.Properties.Name -contains 'install') {
+        return [bool]$App.install
+    }
+
+    return $true
+}
+
+function Show-ApplicationSelection {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object[]]$Applications
+    )
+
+    $selected = @()
+    foreach ($app in $Applications) {
+        $selected += (Test-AppSelectedByDefault -App $app)
+    }
+
+    while ($true) {
+        Write-Host ""
+        Write-Host "Seleccione las aplicaciones a instalar:" -ForegroundColor Cyan
+        Write-Host "Escriba letras separadas por coma para cambiar seleccion (ej: a,c,e)." -ForegroundColor DarkGray
+        Write-Host "* = seleccionar todas | - = no seleccionar ninguna | ENTER = continuar" -ForegroundColor DarkGray
+        Write-Host ""
+
+        for ($i = 0; $i -lt $Applications.Count; $i++) {
+            $mark = if ($selected[$i]) { 'X' } else { ' ' }
+            $key = [char]([int][char]'a' + $i)
+            Write-Host ("  {0}. [{1}] {2}" -f $key, $mark, $Applications[$i].name)
+        }
+
+        Write-Host ""
+        $choice = Read-Host "Seleccion"
+
+        if ([string]::IsNullOrWhiteSpace($choice)) {
+            break
+        }
+
+        switch ($choice.Trim()) {
+            '*' {
+                for ($i = 0; $i -lt $selected.Count; $i++) {
+                    $selected[$i] = $true
+                }
+                continue
+            }
+            '-' {
+                for ($i = 0; $i -lt $selected.Count; $i++) {
+                    $selected[$i] = $false
+                }
+                continue
+            }
+        }
+
+        $keys = $choice -split ','
+        foreach ($rawKey in $keys) {
+            $key = $rawKey.Trim().ToLowerInvariant()
+            if ($key.Length -eq 1) {
+                $arrayIndex = [int][char]$key[0] - [int][char]'a'
+                if ($arrayIndex -ge 0 -and $arrayIndex -lt $Applications.Count) {
+                    $selected[$arrayIndex] = -not [bool]$selected[$arrayIndex]
+                    continue
+                }
+            }
+
+            Write-Warning "Seleccion invalida: '$rawKey'"
+        }
+    }
+
+    $result = @()
+    for ($i = 0; $i -lt $Applications.Count; $i++) {
+        if ($selected[$i]) {
+            $result += $Applications[$i]
+        }
+        else {
+            Write-AulaLog -Message "Instalacion omitida por seleccion del usuario: '$($Applications[$i].name)'" -Level INFO
+        }
+    }
+
+    return $result
+}
+
 # Load configuration
 $config = Get-Content $configFile | ConvertFrom-Json
+if ($config -is [array] -and $config.Count -eq 1 -and $config[0] -is [array]) {
+    $config = $config[0]
+}
+$config = @(Show-ApplicationSelection -Applications $config)
 $total = $config.Count
 $index = 0
+
+if ($total -eq 0) {
+    Write-AulaLog -Message "No se selecciono ninguna aplicacion para instalar." -Level WARNING
+    Write-Host "No se selecciono ninguna aplicacion para instalar." -ForegroundColor Yellow
+    return
+}
 
 foreach ($app in $config) {
     $index++
     $name = $app.name
 
-    # Determine if the application should be installed. Defaults to 'true' if the 'install' property is missing.
-    $shouldInstall = if ($app.PSObject.Properties.Name -contains 'install') {
-        [bool]$app.install
-    } else {
-        $true
-    }
-
     # Display installation progress
     Write-Progress -Activity "Installing applications" `
                    -Status "$index of $total - $name" `
                    -PercentComplete (($index / $total) * 100)
-
-    if (-not $shouldInstall) {
-        Write-AulaLog -Message "Instalación omitida para '$name' (install = false)" -Level INFO
-        continue
-    }
 
     # Find the installer file
     $installer = Get-ChildItem -Path $installersPath -File |
@@ -68,16 +153,29 @@ foreach ($app in $config) {
                 # Log and display the installation command
                 Write-AulaLog -Message "Ejecutando $fileName con parámetros: $($argList -join ' ')" -Level INFO
 
+                $successExitCodes = @(0, 3010, 1641)
+                $process = $null
+
                 if ($isMSI) {
                     $argList = @("/i", "`"$filePath`"") + $argList
-                    Start-Process "msiexec.exe" -ArgumentList $argList -Wait -NoNewWindow -ErrorAction Stop
+                    $process = Start-Process "msiexec.exe" -ArgumentList $argList -Wait -NoNewWindow -PassThru -ErrorAction Stop
                 } else {
                     if ([string]::IsNullOrWhiteSpace($argList)) {
-                       Start-Process -FilePath $filePath -Wait -NoNewWindow -ErrorAction Stop
+                       $process = Start-Process -FilePath $filePath -Wait -NoNewWindow -PassThru -ErrorAction Stop
                     } else {
-                       Start-Process -FilePath $filePath -ArgumentList $argList -Wait -NoNewWindow -ErrorAction Stop
+                       $process = Start-Process -FilePath $filePath -ArgumentList $argList -Wait -NoNewWindow -PassThru -ErrorAction Stop
                     }
                 }
+
+                if ($successExitCodes -notcontains $process.ExitCode) {
+                    throw "El instalador '$fileName' devolvio el codigo de salida $($process.ExitCode)"
+                }
+
+                if ($process.ExitCode -in @(3010, 1641)) {
+                    $rebootRequired = $true
+                    Write-AulaLog -Message "El instalador '$fileName' requiere reinicio para completar la instalacion (ExitCode: $($process.ExitCode))." -Level WARNING
+                }
+
                 Write-AulaLog -Message "Instalación completada exitosamente: $fileName" -Level SUCCESS
             }
 

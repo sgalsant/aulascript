@@ -141,6 +141,26 @@ try {
     else {
         Write-Log "   [OK] Hyper-V ya estaba instalado." "Green"
     }
+
+    if (-not (Get-Command Get-VMSwitch -ErrorAction SilentlyContinue)) {
+        Write-Log "   Instalando herramientas PowerShell de Hyper-V..." "Cyan"
+
+        $managementArgs = @('/Online', '/Enable-Feature', '/FeatureName:Microsoft-Hyper-V-Management-PowerShell', '/All', '/NoRestart', '/Quiet')
+        $managementResult = Start-Process -FilePath 'DISM.exe' -ArgumentList $managementArgs -Wait -PassThru -NoNewWindow
+
+        switch ($managementResult.ExitCode) {
+            0 {
+                Write-Log "   [OK] Herramientas PowerShell de Hyper-V instaladas." "Green"
+            }
+            3010 {
+                $necesitaReinicio = $true
+                Write-Log "   [OK] Herramientas PowerShell de Hyper-V instaladas. Se requiere reinicio para completar." "Yellow"
+            }
+            default {
+                throw "DISM finalizo con codigo de error al instalar herramientas PowerShell de Hyper-V: $($managementResult.ExitCode)"
+            }
+        }
+    }
 }
 catch {
     Write-Log "   [ERROR] Fallo al instalar Hyper-V: $_" "Red"
@@ -237,6 +257,12 @@ foreach ($usuario in $usuarios) {
 # --- 6. CREAR REDES VIRTUALES ---
 # ============================================================
 Write-Log "`n[6/7] Configurando conmutadores virtuales..." "Yellow"
+
+if (-not (Get-Command Get-VMSwitch -ErrorAction SilentlyContinue) -or -not (Get-Command New-VMSwitch -ErrorAction SilentlyContinue)) {
+    Write-Log "   [ERROR] Los cmdlets de Hyper-V (Get-VMSwitch/New-VMSwitch) no estan disponibles." "Red"
+    Write-Log "   Reinicie el equipo si las herramientas de Hyper-V se instalaron en esta ejecucion y vuelva a lanzar esta opcion." "Yellow"
+    exit 1
+}
 
 $nombreSwitchExt = "Red Virtual Externa"
 if (Get-VMSwitch -Name $nombreSwitchExt -ErrorAction SilentlyContinue) {

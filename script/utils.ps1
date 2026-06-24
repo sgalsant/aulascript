@@ -107,3 +107,43 @@ function Wait-Enter {
     Write-Host $Message -NoNewline
     [void][System.Console]::ReadLine()
 }
+
+function Get-AulaConfig {
+    <#
+.SYNOPSIS
+    Carga la configuracion central del proyecto.
+#>
+    [CmdletBinding()]
+    param()
+
+    $configPath = Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'aulascript.config.json'
+
+    if (-not (Test-Path -LiteralPath $configPath)) {
+        throw "No se encontro el fichero de configuracion central: $configPath"
+    }
+
+    try {
+        return Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        throw "No se pudo leer la configuracion central '$configPath': $($_.Exception.Message)"
+    }
+}
+
+function Resolve-AulaConfigPath {
+    <#
+.SYNOPSIS
+    Resuelve rutas relativas al directorio raiz del proyecto AulaScript.
+#>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return $Path
+    }
+
+    return Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath $Path
+}

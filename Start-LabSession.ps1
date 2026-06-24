@@ -47,14 +47,26 @@ $session = New-PSSession -VMName $VMName -Credential $cred
 
 Write-Host "Limpiando directorio destino previo en la VM..." -ForegroundColor Gray
 try {
-    Invoke-Command -Session $session -ArgumentList $RemoteProjectPath -ScriptBlock {
-        param([string]$DestinationPath)
+    Invoke-Command -Session $session -ArgumentList @($RemoteProjectPath, $IncludeRepo.IsPresent) -ScriptBlock {
+        param(
+            [string]$DestinationPath,
+            [bool]$ShouldReplaceRepo
+        )
 
         if (Test-Path -LiteralPath $DestinationPath) {
-            Remove-Item -LiteralPath $DestinationPath -Recurse -Force -ErrorAction Stop
+            if ($ShouldReplaceRepo) {
+                Remove-Item -LiteralPath $DestinationPath -Recurse -Force -ErrorAction Stop
+            }
+            else {
+                Get-ChildItem -LiteralPath $DestinationPath -Force -ErrorAction Stop |
+                    Where-Object { $_.Name -ne 'repo' } |
+                    Remove-Item -Recurse -Force -ErrorAction Stop
+            }
         }
 
-        New-Item -Path $DestinationPath -ItemType Directory -ErrorAction Stop | Out-Null
+        if (-not (Test-Path -LiteralPath $DestinationPath)) {
+            New-Item -Path $DestinationPath -ItemType Directory -ErrorAction Stop | Out-Null
+        }
     } -ErrorAction Stop
 }
 catch {
@@ -64,7 +76,7 @@ catch {
 
 Write-Host "Copiando archivos necesarios a la VM ($RemoteProjectPath)..." -ForegroundColor Cyan
 # Obtenemos solo los archivos y carpetas estrictamente necesarios para los scripts
-$elementosRequeridos = @("script", "postscript", "instalar.ps1", "instalar.bat", "aplicaciones.json")
+$elementosRequeridos = @("script", "postscript", "instalar.ps1", "instalar.bat", "aplicaciones.json", "aulascript.config.json", "wallpaper-ies-ana-luisa-benitez.png")
 
 if ($IncludeRepo) {
     Write-Host "[INFO] Incluyendo directorio repo en la copia a la VM (se reemplaza por completo)." -ForegroundColor Yellow

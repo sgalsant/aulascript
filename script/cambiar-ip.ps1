@@ -29,15 +29,17 @@ param (
 # Importar funciones de utilidad
 . "$PSScriptRoot\utils.ps1"
 
-# --- CONFIGURACION DE AULAS ---
-# Centralizar la configuración en una tabla hash para facilitar el mantenimiento.
-$classroomConfigs = @{
-    '5'  = @{ BaseIPNetwork = '10.5.0.'; BaseOctet = 50; DefaultGateway = '10.5.0.1'; DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
-    '6'  = @{ BaseIPNetwork = '10.6.0.'; BaseOctet = 50; DefaultGateway = '10.6.0.1'; DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
-    '11' = @{ BaseIPNetwork = '10.11.0.'; BaseOctet = 50; DefaultGateway = '10.11.0.1'; DefaultPrefixLength = 16; DNSServers = @('8.8.8.8') }
-    '12' = @{ BaseIPNetwork = '192.168.5.'; BaseOctet = 50; DefaultGateway = '192.168.5.1'; DefaultPrefixLength = 24; DNSServers = @('8.8.8.8') }
+$config = Get-AulaConfig
+$classroomConfigs = @{}
+
+foreach ($property in $config.classrooms.PSObject.Properties) {
+    $classroomConfigs[$property.Name] = $property.Value
 }
-# --- FIN DE CONFIGURACION ---
+
+if ($classroomConfigs.Count -eq 0) {
+    Write-AulaLog -Message "No hay aulas definidas en aulascript.config.json." -Level ERROR
+    exit 1
+}
 
 Clear-Host
 # --- SELECCION DE AULA Y CONFIGURACION DE RED ---
@@ -115,10 +117,10 @@ else {
                 $hostNumber = 0
             }
             
-            $finalOctet = $selectedConfig.BaseOctet + $hostNumber
+            $finalOctet = $selectedConfig.baseOctet + $hostNumber
             if ($finalOctet -gt 254) { $finalOctet = 254 }
 
-            $IPAddress = "$($selectedConfig.BaseIPNetwork)$finalOctet"
+            $IPAddress = "$($selectedConfig.baseIpNetwork)$finalOctet"
         }
         catch {
             Write-AulaLog -Message "No se pudo calcular la IP a partir del nombre del equipo. Error: $_" -Level ERROR
@@ -127,9 +129,9 @@ else {
     }
 
     # Asignar valores por defecto si los parámetros correspondientes están vacíos
-    if ([string]::IsNullOrWhiteSpace($Gateway)) { $Gateway = $selectedConfig.DefaultGateway }
-    if ($null -eq $DNSServers -or $DNSServers.Count -eq 0) { $DNSServers = $selectedConfig.DNSServers }
-    if ($PrefixLength -eq 0) { $PrefixLength = $selectedConfig.DefaultPrefixLength }
+    if ([string]::IsNullOrWhiteSpace($Gateway)) { $Gateway = $selectedConfig.defaultGateway }
+    if ($null -eq $DNSServers -or $DNSServers.Count -eq 0) { $DNSServers = @($selectedConfig.dnsServers) }
+    if ($PrefixLength -eq 0) { $PrefixLength = $selectedConfig.defaultPrefixLength }
 
     Write-Host "  Direccion IP........: $IPAddress"
     Write-Host "  Mascara de subred...: (/$PrefixLength)"

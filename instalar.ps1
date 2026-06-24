@@ -45,6 +45,9 @@ $menuActions = [ordered]@{
                 }
             };
             PostPause = $true }
+    '6' = @{ Label = 'Configurar fondo de escritorio';
+            Action = { & (Join-Path $scriptDir 'configurar-wallpaper.ps1') };
+            PostPause = $true }
     '7' = @{ Label = 'Instalar extension de virtualbox';
             Action = { & (Join-Path $postDir 'virtualbox-ext.ps1') };
             PostPause = $true }

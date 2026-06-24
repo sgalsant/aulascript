@@ -13,10 +13,32 @@ try {
 $projectRoot = Split-Path -Path $PSScriptRoot -Parent
 $repoPath = Join-Path -Path $projectRoot -ChildPath "repo"
 
-$imageName = "ubuntu-24.04.2-wsl-amd64.gz"
-$imagePath = Join-Path -Path $repoPath -ChildPath $imageName
-
 Write-AulaLog -Message "Ruta del repositorio de imágenes: $repoPath" -Level INFO
+
+$image = Get-ChildItem -Path $repoPath -File |
+    Where-Object { $_.Name -match '^ubuntu-\d+(?:\.\d+)*-wsl-amd64\.(gz|wsl)$' } |
+    ForEach-Object {
+        $version = [version]"0.0"
+        if ($_.Name -match '^ubuntu-(?<version>\d+(?:\.\d+)*)-wsl-amd64\.(gz|wsl)$') {
+            $version = [version]$Matches.version
+        }
+
+        [PSCustomObject]@{
+            File = $_
+            Version = $version
+        }
+    } |
+    Sort-Object -Property Version -Descending |
+    Select-Object -First 1
+
+if (-not $image) {
+    Write-AulaLog -Message "No se encontró ninguna imagen Ubuntu WSL con patrón 'ubuntu-*-wsl-amd64.(gz|wsl)' en $repoPath" -Level ERROR
+    Wait-KeyWithTimeout -Message "No se encontró imagen Ubuntu WSL. Presione cualquier tecla para cerrar o espere {0} segundos."
+    exit 1
+}
+
+$imagePath = $image.File.FullName
+Write-AulaLog -Message "Imagen Ubuntu WSL seleccionada: $($image.File.Name)" -Level INFO
 
 try {
     Write-AulaLog -Message "Importando imagen: $imagePath" -Level INFO

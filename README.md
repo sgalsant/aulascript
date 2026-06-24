@@ -7,6 +7,7 @@ Este repositorio contiene un conjunto de scripts diseñados para automatizar la 
 *   **Menú Interactivo Centralizado:** Un único script `instalar.bat` que presenta un menú claro para ejecutar todas las tareas, evitando la necesidad de lanzar múltiples ficheros.
 *   **Elevación Automática de Privilegios:** El script solicita automáticamente los permisos de administrador necesarios para funcionar.
 *   **Instalador de Software Modular:** Sistema de instalación desatendido controlado por un fichero `aplicaciones.json`, que permite definir qué instalar y con qué parámetros.
+*   **Configuración central:** Usuarios, aulas y ruta del wallpaper se definen en `aulascript.config.json`.
 *   **Gestión de Usuarios:** Creación masiva de cuentas de usuario locales con carpetas personales seguras.
 *   **Configuración de Red Dinámica:** Asignación de una dirección IP estática, puerta de enlace y DNS, calculando la IP a partir del nombre del equipo.
 *   **Manejo de Reinicios:** Capacidad para programar scripts que se ejecutan automáticamente después de un reinicio, esencial para instalaciones complejas como WSL.
@@ -29,6 +30,7 @@ aulascript-1/
 │ └── wsl-post-restart.ps1
 ├── instalar.bat # Wrapper para solicitar privilegios de administrador.
 ├── instalar.ps1 # Script principal con el menú interactivo.
+├── aulascript.config.json # Configuración central de usuarios, aulas y wallpaper.
 ├── Start-LabSession.ps1 # Herramienta de despliegue automático hacia la VM.
 ├── aplicaciones.json # Fichero de configuración para software. 
 └── README.md # Este fichero.```
@@ -70,9 +72,13 @@ Edita el fichero `aplicaciones.json` para definir qué software se instalará.
 ]
 ```
 
-### 3. Configurar Scripts (Opcional)
-Usuarios: Para cambiar la lista de usuarios a crear, edita el fichero script/cuentas-usuario.ps1.
-Red: Para ajustar los valores de red por defecto (IP base, puerta de enlace, DNS), edita el fichero script/cambiar-ip.ps1.
+### 3. Configurar usuarios, aulas y wallpaper
+
+Edita `aulascript.config.json` para cambiar la lista de usuarios locales, las aulas disponibles para configurar red y la ruta de la imagen de fondo.
+
+*   **`users`**: lista de cuentas locales que se crearán. La contraseña inicial de cada cuenta sigue siendo igual al nombre de usuario.
+*   **`classrooms`**: aulas disponibles en el menú de red. Cada aula define red base, octeto base, puerta de enlace, prefijo y DNS.
+*   **`wallpaper.sourcePath`**: ruta de la imagen de fondo. Puede ser relativa a la raíz del proyecto o absoluta.
 
 ### 4. Ejecutar los Scripts
 
@@ -138,4 +144,4 @@ El script de red interactivo (`script\cambiar-ip.ps1`) está diseñado para aula
 *   **Cálculo Automático:** El script calcula automáticamente la dirección IP basándose en los dos últimos dígitos numéricos del nombre del equipo, más el valor Base indicado
     *   *Ejemplo:* Si el `hostname` es `AULA1-PC07` y la configuración base es `192.168.150.50`, la IP resultante será `192.168.150.57` (50 + 7).
 *   **Confirmación Interactiva:** Antes de aplicar cualquier cambio, el script muestra la configuración que va a aplicar y pide una confirmación rápida (S/N).
-*   **Flexibilidad:** Los valores de red por defecto (IP base, puerta de enlace, DNS) se pueden modificar fácilmente al principio del fichero `2-cambiar-ip.ps1`.
+*   **Flexibilidad:** Los valores de red por defecto (IP base, puerta de enlace, DNS) se modifican en `aulascript.config.json`, dentro de `classrooms`.

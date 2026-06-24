@@ -62,11 +62,18 @@
     ]
   },
   {
+    "name": "VC_redist",
+    "parameters": [
+      "/install",
+      "/quiet",
+      "/norestart"
+    ]
+  },
+  {
     "name": "virtualbox",
     "parameters": [
       "--silent",
-      "--msiparams",
-      "ADDLOCAL=ALL ALLUSERS=1 INSTALL_DESKTOP_SHORTCUT=1"
+      "--ignore-reboot"
     ],
     "postscript": "postscript/virtualbox-ext.ps1"
   },

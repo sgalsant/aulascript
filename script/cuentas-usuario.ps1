@@ -46,8 +46,12 @@ function Set-ClassroomUser {
 
 # --- EJECUCIÓN ---
 
-# Lista fija de usuarios
-$usuarios = @("1dam", "2dam", "1daw", "2daw", "1smr", "2smr", "ciber", "35007842")
+$config = Get-AulaConfig
+$usuarios = @($config.users)
+
+if ($usuarios.Count -eq 0) {
+    Write-AulaLog -Message "No hay usuarios definidos en aulascript.config.json." -Level WARNING
+}
 
 # Obtener nombres de grupos administradores/usuarios independientes del idioma
 $grupo_adminSID = New-Object System.Security.Principal.SecurityIdentifier("S-1-5-32-544")

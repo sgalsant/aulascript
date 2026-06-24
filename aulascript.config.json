@@ -1,0 +1,54 @@
+{
+  "users": [
+    "1dam",
+    "2dam",
+    "1daw",
+    "2daw",
+    "1smr",
+    "2smr",
+    "ciber",
+    "python",
+    "35007842"
+  ],
+  "classrooms": {
+    "5": {
+      "baseIpNetwork": "10.5.0.",
+      "baseOctet": 50,
+      "defaultGateway": "10.5.0.1",
+      "defaultPrefixLength": 16,
+      "dnsServers": [
+        "8.8.8.8"
+      ]
+    },
+    "6": {
+      "baseIpNetwork": "10.6.0.",
+      "baseOctet": 50,
+      "defaultGateway": "10.6.0.1",
+      "defaultPrefixLength": 16,
+      "dnsServers": [
+        "8.8.8.8"
+      ]
+    },
+    "11": {
+      "baseIpNetwork": "10.11.0.",
+      "baseOctet": 50,
+      "defaultGateway": "10.11.0.1",
+      "defaultPrefixLength": 16,
+      "dnsServers": [
+        "8.8.8.8"
+      ]
+    },
+    "12": {
+      "baseIpNetwork": "192.168.5.",
+      "baseOctet": 50,
+      "defaultGateway": "192.168.5.1",
+      "defaultPrefixLength": 24,
+      "dnsServers": [
+        "8.8.8.8"
+      ]
+    }
+  },
+  "wallpaper": {
+    "sourcePath": "wallpaper-ies-ana-luisa-benitez.png"
+  }
+}
